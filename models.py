@@ -14,7 +14,7 @@ class Storage(db.Model):
     
 
     def __repr__(self) -> str:
-        return f'Router(id={self.id!r}, hostname={self.hostname!r})'
+        return f'(id={self.id!r}, data={self.data!r}, temps= {self.temps!r}, status= {self.status!r} )'
 
     # def serialize(self) -> dict:
     #     return {
