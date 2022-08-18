@@ -86,8 +86,10 @@ def stop_polling():
 
 @app.route('/query')
 def query():
-    #return str(db.session.query(Storage).order_by(Storage.id.desc()).limit(3).all())   
-    return json.dumps(str(Storage.query.limit(1).all()))
+    temps = str(Storage.query.order_by(Storage.id.desc()).limit(3).with_entities(Storage.temps).all())  #restituisce le ultime 3 occorrenze di temps
+    print(type(temps))
+    return json.dumps(temps)
+
 
 def startp(interval):
 
