@@ -8,13 +8,30 @@ class Storage(db.Model):
     __tablename__ = 'storage'
 
     id = db.Column(db.Integer, primary_key=True)
-    data = db.Column(db.String)
-    temps = db.Column(db.String)
+    data = db.Column(db.DateTime)
+    t1 = db.Column(db.Float)
+    t2 = db.Column(db.Float)
+    t3 = db.Column(db.Float)
+    t4 = db.Column(db.Float)
     status = db.Column(db.String)
     
 
     def __repr__(self) -> str:
         return f'(id={self.id!r}, data={self.data!r}, temps= {self.temps!r}, status= {self.status!r} )'
+
+
+# class Storage(db.Model):
+
+#     __tablename__ = 'statistiche'
+
+#     id = db.Column(db.Integer, primary_key=True)
+#     media = db.Column(db.Float)
+#     devs = db.Column(db.Float)
+#     min = db.Column(db.Float)
+#     max = db.Column(db.Float)
+
+#     def __repr__(self) -> str:
+#         return f'(id={self.id!r}, media={self.media!r}, devs= {self.devs!r}, min= {self.min!r}, max= {self.max!r} )'
 
     # def serialize(self) -> dict:
     #     return {

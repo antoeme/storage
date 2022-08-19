@@ -5,18 +5,27 @@ import datetime
 import threading
 import time
 
+from requests.auth import HTTPBasicAuth
+
 from dotenv import load_dotenv
 from os import getenv
+
+#docker run --name postgresdb -d -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres
+#docker exec -tiu postgres postgresdb psql per entrare nella shell del db
 
 GET_TEMP = getenv("GET_TEMP") or  "http://127.0.0.1:5002/temps"  #url che chiama get_temps nel collector
 GET_STATUS_RELAYS = getenv("GET_STATUS_RELAYS") or "http://127.0.0.1:5002/status_relays"
 DB = "http://127.0.0.1:5003/db"
+GET_T = "http://127.0.0.1:5000/temp/"
+username = "daniele" or "antonio"
+password = "Cisco123" or "Dtlab123"
 stop_event = threading.Event()  #variabile evento per lo stop 
 
 # load environment variables from '.env' file
 load_dotenv()
 
 app = Flask(__name__)
+
 
 x = None
 
@@ -38,27 +47,32 @@ def helloworld():
 
 
 
-@app.route('/get_value')
-def get_status():
-    response_temps = requests.get(GET_TEMP)
-    response_status = requests.get(GET_STATUS_RELAYS)
-    with open("output.txt", "a") as f:
-        i = datetime.datetime.now()
-        j = json.dumps(response_temps.json())
-        k = json.dumps(response_status.json())
-        f.write(str(i)+ " "+ str(j) +" "+ str(k) + "\n") 
-        f.close() 
+# @app.route('/get_value')
+# def get_status():
+#     response_temps = requests.get(GET_TEMP,auth=HTTPBasicAuth(username,password))
+#     response_status = requests.get(GET_STATUS_RELAYS)
+#     with open("output.txt", "a") as f:
+#         i = datetime.datetime.now()
+#         j = json.dumps(response_temps.json())
+#         k = json.dumps(response_status.json())
+#         f.write(str(i)+ " "+ str(j) +" "+ str(k) + "\n") 
+#         f.close() 
     
-    return "scritto su file valori temps e stati relays"
+#     return "scritto su file valori temps e stati relays"
 
 @app.route('/db')
 def write_db():
-    response_temps = requests.get(GET_TEMP)
     response_status = requests.get(GET_STATUS_RELAYS) 
     i = datetime.datetime.now()
-    j = json.dumps(response_temps.json())
     k = json.dumps(response_status.json())
-    row = Storage(data = str(i), temps = str(j), status = str(k) )  #crea la riga da aggiungere al database della classe storage
+    l = []
+    for t in range(4):
+        r_t = requests.get(GET_T + str(t+1), auth=HTTPBasicAuth(username,password) )
+        s = str (json.dumps(r_t.json()))    #arriva il json che trasformiamo in str
+        temp = s[4:-1]
+        l.append(float(temp))
+    print(l)    
+    row = Storage(data = i, t1 = l[0], t2= l[1], t3 = l[2], t4 = l[3], status = str(k) )  #crea la riga da aggiungere al database della classe storage
     db.session.add(row)
     db.session.commit()
     return "aggiunta riga db"
