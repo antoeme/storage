@@ -67,9 +67,9 @@ def write_db():
     k = json.dumps(response_status.json())
     l = []
     for t in range(4):
-        r_t = requests.get(GET_T + str(t+1), auth=HTTPBasicAuth(username,password) )
+        r_t = requests.get(GET_T + str(t+1), auth=HTTPBasicAuth(username,password) )    #fa la get al singolo sensore per la temp
         s = str (json.dumps(r_t.json()))    #arriva il json che trasformiamo in str
-        temp = s[4:-1]
+        temp = s[4:-1]  #elimina caratteri non utili
         l.append(float(temp))
     print(l)    
     row = Storage(data = i, t1 = l[0], t2= l[1], t3 = l[2], t4 = l[3], status = str(k) )  #crea la riga da aggiungere al database della classe storage
@@ -98,12 +98,46 @@ def stop_polling():
     
     return "stopped polling"
 
-@app.route('/query')
-def query():
-    temps = str(Storage.query.order_by(Storage.id.desc()).limit(3).with_entities(Storage.temps).all())  #restituisce le ultime 3 occorrenze di temps
-    print(type(temps))
-    return json.dumps(temps)
 
+@app.route('/query/<int:id_t>', methods=[ 'GET','POST'])
+def query(id_t):
+    if (id_t==1):
+        l = []
+        temps = (Storage.query.order_by(Storage.id.desc()).limit(3).with_entities(Storage.t1).all())  #restituisce le ultime 3 occorrenze di t1
+        for t in range(3):
+            s = str(temps[t])
+            chars = '(),'
+            res = s.translate(str.maketrans('','',chars))
+            l.append(float(res)) #
+            print((l[t]))
+    elif (id_t==2):
+        l = []
+        temps = (Storage.query.order_by(Storage.id.desc()).limit(3).with_entities(Storage.t2).all())  #restituisce le ultime 3 occorrenze di t1
+        for t in range(3):
+            s = str(temps[t])
+            chars = '(),'
+            res = s.translate(str.maketrans('','',chars))
+            l.append(float(res)) #
+            print((l[t]))
+    elif (id_t==3):
+        l = []
+        temps = (Storage.query.order_by(Storage.id.desc()).limit(3).with_entities(Storage.t3).all())  #restituisce le ultime 3 occorrenze di t1
+        for t in range(3):
+            s = str(temps[t])
+            chars = '(),'
+            res = s.translate(str.maketrans('','',chars))
+            l.append(float(res)) #
+            print((l[t]))
+    elif (id_t==4):
+        l = []
+        temps = (Storage.query.order_by(Storage.id.desc()).limit(3).with_entities(Storage.t4).all())  #restituisce le ultime 3 occorrenze di t1
+        for t in range(3):
+            s = str(temps[t])
+            chars = '(),'
+            res = s.translate(str.maketrans('','',chars))
+            l.append(float(res)) #
+            print((l[t]))
+    return json.dumps(l)
 
 def startp(interval):
 
@@ -112,6 +146,7 @@ def startp(interval):
         requests.get(DB)
         time.sleep(interval)
     print("thread stopped")
+
 
 
 if __name__ == '__main__':
