@@ -17,6 +17,8 @@ GET_TEMP = getenv("GET_TEMP") or  "http://127.0.0.1:5002/temps"  #url che chiama
 GET_STATUS_RELAYS = getenv("GET_STATUS_RELAYS") or "http://127.0.0.1:5002/status_relays"
 DB = "http://127.0.0.1:5003/db"
 GET_T = "http://127.0.0.1:5000/temp/"
+URL_STATS = "http://127.0.0.1:5005/transfer"
+
 username = "daniele" or "antonio"
 password = "Cisco123" or "Dtlab123"
 stop_event = threading.Event()  #variabile evento per lo stop 
@@ -147,7 +149,12 @@ def startp(interval):
         time.sleep(interval)
     print("thread stopped")
 
-
+@app.route('/statistiche')
+def stats():
+    s = requests.get(URL_STATS)
+    stat = json.dumps(s.json())
+    print(stat)
+    return "catturate statistiche"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True,port=5003)
