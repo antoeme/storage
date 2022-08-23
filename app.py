@@ -13,6 +13,7 @@ from os import getenv
 #docker run --name postgresdb -d -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres
 #docker exec -tiu postgres postgresdb psql per entrare nella shell del db
 
+NUM_SENSORI = 4
 GET_TEMP = getenv("GET_TEMP") or  "http://127.0.0.1:5002/temps"  #url che chiama get_temps nel collector
 GET_STATUS_RELAYS = getenv("GET_STATUS_RELAYS") or "http://127.0.0.1:5002/status_relays"
 DB = "http://127.0.0.1:5003/db"
@@ -68,16 +69,19 @@ def write_db():
     i = datetime.datetime.now()
     k = json.dumps(response_status.json())
     l = []
-    for t in range(4):
+    for t in range(NUM_SENSORI):
         r_t = requests.get(GET_T + str(t+1), auth=HTTPBasicAuth(username,password) )    #fa la get al singolo sensore per la temp
         s = str (json.dumps(r_t.json()))    #arriva il json che trasformiamo in str
-        temp = s[4:-1]  #elimina caratteri non utili
-        l.append(float(temp))
-    print(l)    
-    row = Storage(data = i, t1 = l[0], t2= l[1], t3 = l[2], t4 = l[3], status = str(k) )  #crea la riga da aggiungere al database della classe storage
-    db.session.add(row)
-    db.session.commit()
-    return "aggiunta riga db"
+        t_s = s[4:-1]  #elimina caratteri non utili
+        row = Storage(data = i, id_sens = t+1, temp = float(t_s) , status = str(k) )  #crea la riga da aggiungere al database della classe storage
+        db.session.add(row)
+        db.session.commit()
+        print("aggiunta riga sensore ", t+1)
+       
+    # row = Storage(data = i, t1 = l[0], t2= l[1], t3 = l[2], t4 = l[3], status = str(k) )  #crea la riga da aggiungere al database della classe storage
+    # db.session.add(row)
+    # db.session.commit()
+    return "aggiunte temperature in db"
 
 @app.route('/polling_db')
 def polling():
@@ -103,42 +107,17 @@ def stop_polling():
 
 @app.route('/query/<int:id_t>', methods=[ 'GET','POST'])
 def query(id_t):
-    if (id_t==1):
-        l = []
-        temps = (Storage.query.order_by(Storage.id.desc()).limit(3).with_entities(Storage.t1).all())  #restituisce le ultime 3 occorrenze di t1
-        for t in range(3):
-            s = str(temps[t])
-            chars = '(),'
-            res = s.translate(str.maketrans('','',chars))
-            l.append(float(res)) #
-            print((l[t]))
-    elif (id_t==2):
-        l = []
-        temps = (Storage.query.order_by(Storage.id.desc()).limit(3).with_entities(Storage.t2).all())  #restituisce le ultime 3 occorrenze di t1
-        for t in range(3):
-            s = str(temps[t])
-            chars = '(),'
-            res = s.translate(str.maketrans('','',chars))
-            l.append(float(res)) #
-            print((l[t]))
-    elif (id_t==3):
-        l = []
-        temps = (Storage.query.order_by(Storage.id.desc()).limit(3).with_entities(Storage.t3).all())  #restituisce le ultime 3 occorrenze di t1
-        for t in range(3):
-            s = str(temps[t])
-            chars = '(),'
-            res = s.translate(str.maketrans('','',chars))
-            l.append(float(res)) #
-            print((l[t]))
-    elif (id_t==4):
-        l = []
-        temps = (Storage.query.order_by(Storage.id.desc()).limit(3).with_entities(Storage.t4).all())  #restituisce le ultime 3 occorrenze di t1
-        for t in range(3):
-            s = str(temps[t])
-            chars = '(),'
-            res = s.translate(str.maketrans('','',chars))
-            l.append(float(res)) #
-            print((l[t]))
+    l = []
+    temps = (Storage.query.order_by(Storage.id.desc()).filter_by(id_sens=int(id_t)).with_entities(Storage.temp).all())  #restituisce tutte le occorrenze di id_t 
+        
+    print(temps)
+    for t in range(len(temps)):
+        s = str(temps[t])
+        chars = '(),'
+        res = s.translate(str.maketrans('','',chars))
+        l.append(float(res)) #
+    print((l))
+ 
     return json.dumps(l)
 
 def startp(interval):
