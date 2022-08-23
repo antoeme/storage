@@ -1,5 +1,5 @@
 import json
-from flask import Flask,jsonify
+from flask import Flask,jsonify, request
 import requests
 import datetime
 import threading
@@ -35,7 +35,7 @@ x = None
 app.config['SQLALCHEMY_DATABASE_URI'] =  f'postgresql://{getenv("DB_USER")}:{getenv("DB_PASSWORD")}@{getenv("DB_HOST")}:{getenv("DB_PORT")}/{getenv("DB_NAME")}?sslmode=disable'
 
 # db connection
-from models import Storage, db
+from models import Stats, Storage, db
 
 db.init_app(app)
 
@@ -43,25 +43,6 @@ with app.app_context():
     db.create_all() #crea tutte le tabelle
 
 
-
-@app.route('/')
-def helloworld():
-    return jsonify({"about": " Helloworld !"})
-
-
-
-# @app.route('/get_value')
-# def get_status():
-#     response_temps = requests.get(GET_TEMP,auth=HTTPBasicAuth(username,password))
-#     response_status = requests.get(GET_STATUS_RELAYS)
-#     with open("output.txt", "a") as f:
-#         i = datetime.datetime.now()
-#         j = json.dumps(response_temps.json())
-#         k = json.dumps(response_status.json())
-#         f.write(str(i)+ " "+ str(j) +" "+ str(k) + "\n") 
-#         f.close() 
-    
-#     return "scritto su file valori temps e stati relays"
 
 @app.route('/db')
 def write_db():
@@ -78,9 +59,6 @@ def write_db():
         db.session.commit()
         print("aggiunta riga sensore ", t+1)
        
-    # row = Storage(data = i, t1 = l[0], t2= l[1], t3 = l[2], t4 = l[3], status = str(k) )  #crea la riga da aggiungere al database della classe storage
-    # db.session.add(row)
-    # db.session.commit()
     return "aggiunte temperature in db"
 
 @app.route('/polling_db')
@@ -110,13 +88,13 @@ def query(id_t):
     l = []
     temps = (Storage.query.order_by(Storage.id.desc()).filter_by(id_sens=int(id_t)).with_entities(Storage.temp).all())  #restituisce tutte le occorrenze di id_t 
         
-    print(temps)
+    #print(temps)
     for t in range(len(temps)):
         s = str(temps[t])
         chars = '(),'
         res = s.translate(str.maketrans('','',chars))
         l.append(float(res)) #
-    print((l))
+    #print((l))
  
     return json.dumps(l)
 
@@ -128,11 +106,23 @@ def startp(interval):
         time.sleep(interval)
     print("thread stopped")
 
-@app.route('/statistiche')
+@app.route('/statistiche', methods=[ 'GET','POST'] )
 def stats():
-    s = requests.get(URL_STATS)
-    stat = json.dumps(s.json())
-    print(stat)
+
+    d = request.json    #catturiamo la post ricevuta dal modulo compute
+    for i in range(len(d)):
+        dict = d[i]
+        id_s = dict["id_sensore"]
+        minimo = dict["min"]
+        massimo = dict["max"]
+        m = dict["media"]
+        dev = dict["devs"]
+        row = Stats(id_sens = int(id_s), media = float(m), devs = float(dev), min = float(minimo), max = float(massimo))
+        db.session.add(row)
+        db.session.commit()
+        print("aggiunta riga sensore ", id_s," per tabella statistiche")
+    
+   
     return "catturate statistiche"
 
 if __name__ == '__main__':
