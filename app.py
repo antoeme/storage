@@ -14,11 +14,11 @@ from os import getenv
 #docker exec -tiu postgres postgresdb psql per entrare nella shell del db
 
 NUM_SENSORI = 4
-GET_TEMP = getenv("GET_TEMP") or  "http://127.0.0.1:5002/temps"  #url che chiama get_temps nel collector
-GET_STATUS_RELAYS = getenv("GET_STATUS_RELAYS") or "http://127.0.0.1:5002/status_relays"
+GET_TEMP = getenv("GET_TEMP") #or  "http://127.0.0.1:5002/temps"  #url che chiama get_temps nel collector
+GET_STATUS_RELAYS = getenv("GET_STATUS_RELAYS") #or "http://127.0.0.1:5002/status_relays"
 DB = "http://127.0.0.1:5003/db"
 GET_T = "http://127.0.0.1:5000/temp/"
-URL_STATS = "http://127.0.0.1:5005/transfer"
+
 
 username = "daniele" or "antonio"
 password = "Cisco123" or "Dtlab123"
@@ -29,13 +29,14 @@ load_dotenv()
 
 app = Flask(__name__)
 
+time.sleep(5)
 
 x = None
 
 app.config['SQLALCHEMY_DATABASE_URI'] =  f'postgresql://{getenv("DB_USER")}:{getenv("DB_PASSWORD")}@{getenv("DB_HOST")}:{getenv("DB_PORT")}/{getenv("DB_NAME")}?sslmode=disable'
 
 # db connection
-from models import Stats, Storage, db
+from models import Stats, Storage, Relays, db
 
 db.init_app(app)
 
@@ -46,7 +47,8 @@ with app.app_context():
 
 @app.route('/db')
 def write_db():
-    response_status = requests.get(GET_STATUS_RELAYS) 
+    response_status = requests.get(GET_STATUS_RELAYS).json()    #estrare dizionario contenente status relays 
+    print(response_status)
     i = datetime.datetime.now()
     k = json.dumps(response_status.json())
     l = []
@@ -58,6 +60,7 @@ def write_db():
         db.session.add(row)
         db.session.commit()
         print("aggiunta riga sensore ", t+1)
+        #stato_r = requests.get(STATUS_RELAY, auth=HTTPBasicAuth(username,password)).json() #estrae dizionari di relays
        
     return "aggiunte temperature in db"
 
@@ -117,7 +120,7 @@ def stats():
         massimo = dict["max"]
         m = dict["media"]
         dev = dict["devs"]
-        row = Stats(id_sens = int(id_s), media = float(m), devs = float(dev), min = float(minimo), max = float(massimo))
+        row = Stats(data =datetime.datetime.now(), id_sens = int(id_s), media = float(m), devs = float(dev), min = float(minimo), max = float(massimo))
         db.session.add(row)
         db.session.commit()
         print("aggiunta riga sensore ", id_s," per tabella statistiche")
